@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: backsy
+    env: python
+    branch: main
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 2 main:app"
+    envVars:
+      - key: CSVAPI_APP_NAME
+        value: backsy
+      - key: CSVAPI_EXPORT_DIR
+        value: /srv/exports
+      - key: CSVAPI_MAX_UPLOAD_MB
+        value: "100"
+      - key: CSVAPI_CORS_ALLOW_ORIGINS
+        value: "*"
+    # NOTE: persistent disk configuration can be done in the UI if this syntax differs
+    disk:
+      mountPath: /srv/exports
+      sizeGB: 10
