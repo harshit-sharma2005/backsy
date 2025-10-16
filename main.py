@@ -31,6 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Ensure export directory exists before mounting and background tasks start.
+settings.EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+
 # Mount exports directory statically to serve downloadable files
 app.mount("/downloads", StaticFiles(directory=str(settings.EXPORT_DIR)), name="downloads")
 
@@ -50,6 +53,8 @@ from app.services.cleanup import start_cleanup_task, stop_cleanup_task  # noqa: 
 
 @app.on_event("startup")
 async def on_startup() -> None:
+    # Ensure export directory exists (re-try in case mount became available later)
+    settings.EXPORT_DIR.mkdir(parents=True, exist_ok=True)
     await start_cleanup_task(app)
 
 
