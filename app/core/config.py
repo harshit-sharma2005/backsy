@@ -32,5 +32,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-# Ensure export directory exists on import (safe in most contexts)
-settings.EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+# NOTE: we no longer create the export directory at import time because
+# importing modules during certain deployment environments (mounted volumes,
+# ephemeral containers) can run before external volumes are available. The
+# application should ensure the directory exists during startup.
