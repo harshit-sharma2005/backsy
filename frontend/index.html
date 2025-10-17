@@ -1,0 +1,1531 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Backsy CSV Processing API</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d30;
+      --bg-hover: #2a2d2e;
+      --border-color: #3e3e42;
+      --text-primary: #cccccc;
+      --text-secondary: #8c8c8c;
+      --text-muted: #6e6e6e;
+      --accent-orange: #ff6c37;
+      --accent-blue: #4a9eff;
+      --accent-green: #3dd68c;
+      --accent-red: #f93e3e;
+      --accent-yellow: #ffc107;
+      --input-bg: #1e1e1e;
+      --input-border: #3e3e42;
+      --scrollbar-bg: #1e1e1e;
+      --scrollbar-thumb: #424242;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #5a5a5a; }
+    
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      color: white;
+    }
+    
+    .logo-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .mode-badge {
+      background: var(--bg-tertiary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    
+    /* Main Layout */
+    .main-content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .sidebar {
+      width: 260px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .nav-item {
+      padding: 10px 16px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      font-size: 13px;
+    }
+    
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      color: var(--accent-orange);
+      border-left-color: var(--accent-orange);
+    }
+    
+    .nav-icon {
+      width: 16px;
+      text-align: center;
+    }
+    
+    /* Request Panel */
+    .request-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+    
+    .request-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .method-dropdown {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--input-border);
+      color: var(--accent-green);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      min-width: 80px;
+    }
+    
+    .endpoint-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    
+    .endpoint-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+    
+    .send-btn {
+      background: var(--accent-orange);
+      color: white;
+      border: none;
+      padding: 8px 24px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .send-btn:hover {
+      background: #ff5722;
+      transform: translateY(-1px);
+    }
+    
+    /* Tabs */
+    .tabs-container {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      padding: 0 20px;
+    }
+    
+    .tab {
+      padding: 12px 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      font-size: 13px;
+    }
+    
+    .tab:hover {
+      color: var(--text-primary);
+    }
+    
+    .tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent-orange);
+    }
+    
+    /* Request Body */
+    .request-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .form-section {
+      margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-primary);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      transition: border-color 0.15s;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+    
+    .form-textarea {
+      min-height: 100px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      resize: vertical;
+    }
+    
+    .form-input[type="file"] {
+      padding: 6px;
+      cursor: pointer;
+    }
+    
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .checkbox-wrapper input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--accent-orange);
+    }
+    
+    .checkbox-wrapper label {
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    
+    /* Collapsible Section */
+    .collapsible {
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .collapsible-header {
+      background: var(--bg-secondary);
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    
+    .collapsible-header:hover {
+      background: var(--bg-hover);
+    }
+    
+    .collapsible-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .collapsible-arrow {
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+      font-size: 12px;
+    }
+    
+    .collapsible.open .collapsible-arrow {
+      transform: rotate(90deg);
+    }
+    
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    .collapsible.open .collapsible-content {
+      max-height: 2000px;
+    }
+    
+    .collapsible-body {
+      padding: 16px;
+      background: var(--bg-primary);
+    }
+    
+    /* Dynamic Rows */
+    .dynamic-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 2fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: end;
+    }
+    
+    .dynamic-row.sort {
+      grid-template-columns: 2fr 1fr auto;
+    }
+    
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--accent-red);
+      border-color: var(--accent-red);
+    }
+    
+    .btn-add {
+      background: transparent;
+      border: 1px dashed var(--input-border);
+      color: var(--text-secondary);
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      width: fit-content;
+    }
+    
+    .btn-add:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      background: rgba(74, 158, 255, 0.1);
+    }
+    
+    /* Metric Builder */
+    .metric-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .metric-header {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    
+    .metric-header input {
+      flex: 1;
+    }
+    
+    .metric-functions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .func-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-tertiary);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      transition: all 0.15s;
+    }
+    
+    .func-checkbox:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent-orange);
+    }
+    
+    .func-checkbox input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+    
+    /* Response Panel */
+    .response-panel {
+      width: 50%;
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+    
+    .response-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .response-status {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .status-indicator {
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-success {
+      background: rgba(61, 214, 140, 0.15);
+      color: var(--accent-green);
+    }
+    
+    .status-error {
+      background: rgba(249, 62, 62, 0.15);
+      color: var(--accent-red);
+    }
+    
+    .status-pending {
+      background: rgba(255, 193, 7, 0.15);
+      color: var(--accent-yellow);
+    }
+    
+    .response-time {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+    
+    .response-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--input-border);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent-blue);
+    }
+    
+    .response-tabs {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      padding: 0 20px;
+    }
+    
+    .response-body {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      border-radius: 4px;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent-orange);
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .code-viewer {
+      background: #0d0d0d;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 16px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #d4d4d4;
+      overflow: auto;
+      white-space: pre;
+      max-height: 600px;
+    }
+    
+    /* Documentation Sidebar */
+    .docs-panel {
+      width: 400px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .docs-panel.visible {
+      display: block;
+    }
+    
+    .docs-content {
+      padding: 20px;
+    }
+    
+    .docs-section {
+      margin-bottom: 24px;
+    }
+    
+    .docs-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    
+    .docs-text {
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    
+    .code-example {
+      background: #0d0d0d;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #d4d4d4;
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+    
+    .info-callout {
+      background: rgba(74, 158, 255, 0.1);
+      border-left: 3px solid var(--accent-blue);
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .info-callout-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      margin-bottom: 6px;
+    }
+    
+    .info-callout-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    @media (max-width: 1400px) {
+      .response-panel {
+        width: 45%;
+      }
+      .docs-panel {
+        display: none !important;
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      .main-content {
+        flex-direction: column;
+      }
+      .response-panel {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+      }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 40px;
+    }
+    
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    
+    .empty-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">B</div>
+        <span class="logo-text">Backsy CSV Processing API</span>
+      </div>
+      <div class="header-actions">
+        <div class="mode-badge" id="modeIndicator">multipart/form-data</div>
+        <button class="btn-secondary" onclick="toggleDocs()">📖 Docs</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar Navigation -->
+      <div class="sidebar">
+        <div class="sidebar-header">Request Configuration</div>
+        <div class="nav-item active" data-section="input">
+          <span class="nav-icon">📥</span>
+          <span>Data Source</span>
+        </div>
+        <div class="nav-item" data-section="parsing">
+          <span class="nav-icon">⚙️</span>
+          <span>Parsing</span>
+        </div>
+        <div class="nav-item" data-section="cleaning">
+          <span class="nav-icon">🧹</span>
+          <span>Cleaning</span>
+        </div>
+        <div class="nav-item" data-section="selection">
+          <span class="nav-icon">🎯</span>
+          <span>Selection & Filters</span>
+        </div>
+        <div class="nav-item" data-section="aggregation">
+          <span class="nav-icon">📊</span>
+          <span>Aggregation</span>
+        </div>
+        <div class="nav-item" data-section="sorting">
+          <span class="nav-icon">🔄</span>
+          <span>Sorting</span>
+        </div>
+        <div class="nav-item" data-section="export">
+          <span class="nav-icon">💾</span>
+          <span>Export</span>
+        </div>
+      </div>
+
+      <!-- Request Panel -->
+      <div class="request-panel">
+        <div class="request-header">
+          <select class="method-dropdown">
+            <option value="POST">POST</option>
+          </select>
+          <input class="endpoint-input" value="/process/csv" readonly />
+          <button class="send-btn" id="sendBtn">Send</button>
+        </div>
+
+        <div class="tabs-container">
+          <div class="tab active" data-tab="body">Body</div>
+          <div class="tab" data-tab="headers">Headers</div>
+        </div>
+
+        <div class="request-body">
+          <!-- Body Tab -->
+          <div class="tab-content active" data-content="body">
+            <!-- Input Section -->
+            <div class="form-section" data-nav="input">
+              <div class="section-title">Data Source</div>
+              
+              <div class="form-group">
+                <label class="form-label">Upload File</label>
+                <input type="file" class="form-input" id="file" accept=".csv,.xlsx,.xls" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">URL</label>
+                <input type="url" class="form-input" id="url" placeholder="https://example.com/data.csv" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Raw CSV</label>
+                <textarea class="form-textarea" id="raw_csv" placeholder="name,age,city&#10;Alice,30,NYC&#10;Bob,25,LA"></textarea>
+              </div>
+            </div>
+
+            <!-- Parsing Section -->
+            <div class="form-section" data-nav="parsing">
+              <div class="section-title">Parsing Options</div>
+              
+              <div class="form-group">
+                <label class="form-label">Delimiter (auto-detect if empty)</label>
+                <input type="text" class="form-input" id="par_delim" placeholder="," maxlength="1" />
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="par_has_header" checked />
+                <label for="par_has_header">First row contains headers</label>
+              </div>
+            </div>
+
+            <!-- Cleaning Section -->
+            <div class="form-section" data-nav="cleaning">
+              <div class="section-title">Data Cleaning</div>
+              
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="clean_drop_dup_rows" checked />
+                <label for="clean_drop_dup_rows">Drop duplicate rows</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="clean_drop_dup_cols" checked />
+                <label for="clean_drop_dup_cols">Drop duplicate columns</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="clean_auto_convert" checked />
+                <label for="clean_auto_convert">Auto-convert data types</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="clean_normalize" />
+                <label for="clean_normalize">Normalize numeric columns (0-1)</label>
+              </div>
+
+              <div class="collapsible">
+                <div class="collapsible-header">
+                  <span class="collapsible-title">Fill Missing Values</span>
+                  <span class="collapsible-arrow">▶</span>
+                </div>
+                <div class="collapsible-content">
+                  <div class="collapsible-body">
+                    <div class="checkbox-wrapper">
+                      <input type="checkbox" id="clean_fill_missing" />
+                      <label for="clean_fill_missing">Enable fill missing</label>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Fill value</label>
+                      <input type="text" class="form-input" id="clean_fill_value" placeholder="0, NA, Unknown..." />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selection Section -->
+            <div class="form-section" data-nav="selection">
+              <div class="section-title">Selection & Filters</div>
+              
+              <div class="form-group">
+                <label class="form-label">Select Columns (comma-separated)</label>
+                <input type="text" class="form-input" id="sel_columns" placeholder="name,age,city" />
+              </div>
+
+              <div class="collapsible open">
+                <div class="collapsible-header">
+                  <span class="collapsible-title">Row Filters</span>
+                  <span class="collapsible-arrow">▶</span>
+                </div>
+                <div class="collapsible-content">
+                  <div class="collapsible-body">
+                    <div id="filters-container"></div>
+                    <button class="btn-add" id="add-filter">
+                      <span>+</span>
+                      <span>Add Filter</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Aggregation Section -->
+            <div class="form-section" data-nav="aggregation">
+              <div class="section-title">Aggregation</div>
+              
+              <div class="form-group">
+                <label class="form-label">Group By (comma-separated)</label>
+                <input type="text" class="form-input" id="agg_by" placeholder="category,region" />
+              </div>
+
+              <div class="collapsible open">
+                <div class="collapsible-header">
+                  <span class="collapsible-title">Metrics</span>
+                  <span class="collapsible-arrow">▶</span>
+                </div>
+                <div class="collapsible-content">
+                  <div class="collapsible-body">
+                    <div id="metrics-container"></div>
+                    <button class="btn-add" id="add-metric">
+                      <span>+</span>
+                      <span>Add Metric</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sorting Section -->
+            <div class="form-section" data-nav="sorting">
+              <div class="section-title">Sorting</div>
+              
+              <div id="sort-container"></div>
+              <button class="btn-add" id="add-sort">
+                <span>+</span>
+                <span>Add Sort Column</span>
+              </button>
+            </div>
+
+            <!-- Export Section -->
+            <div class="form-section" data-nav="export">
+              <div class="section-title">Export Settings</div>
+              
+              <div class="form-group">
+                <label class="form-label">Output Format</label>
+                <select class="form-select" id="output_format">
+                  <option value="json">JSON</option>
+                  <option value="csv">CSV</option>
+                  <option value="excel">Excel (XLSX)</option>
+                </select>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="provide_download" />
+                <label for="provide_download">Generate download URL</label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Filename (optional)</label>
+                <input type="text" class="form-input" id="filename" placeholder="processed_data" />
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="jsonMode" />
+                <label for="jsonMode">Use JSON body mode</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Headers Tab -->
+          <div class="tab-content" data-content="headers">
+            <div class="form-section">
+              <div class="info-callout">
+                <div class="info-callout-title">Content-Type</div>
+                <div class="info-callout-text">
+                  Automatically set based on request mode:<br>
+                  • multipart/form-data (default)<br>
+                  • application/json (when JSON mode enabled)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response Panel -->
+      <div class="response-panel">
+        <div class="response-header">
+          <div class="response-status">
+            <span id="statusIndicator"></span>
+            <span class="response-time" id="responseTime"></span>
+          </div>
+          <div class="response-actions">
+            <button class="btn-secondary" id="copyBtn">Copy</button>
+            <button class="btn-secondary" id="clearBtn">Clear</button>
+          </div>
+        </div>
+
+        <div class="response-tabs">
+          <div class="tab active" data-tab="response">Response</div>
+          <div class="tab" data-tab="stats">Statistics</div>
+        </div>
+
+        <div class="response-body">
+          <!-- Response Tab -->
+          <div class="tab-content active" data-content="response">
+            <div class="empty-state" id="emptyState">
+              <div class="empty-icon">📡</div>
+              <div class="empty-text">Send a request to see the response</div>
+            </div>
+            <div id="statsDisplay" style="display: none;"></div>
+            <div class="code-viewer" id="responseViewer" style="display: none;"></div>
+          </div>
+
+          <!-- Statistics Tab -->
+          <div class="tab-content" data-content="stats">
+            <div class="empty-state" id="emptyStateStats">
+              <div class="empty-icon">📊</div>
+              <div class="empty-text">Statistics will appear here after processing</div>
+            </div>
+            <div id="detailedStats" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documentation Panel -->
+      <div class="docs-panel" id="docsPanel">
+        <div class="docs-content">
+          <div class="docs-section">
+            <div class="docs-title">API Endpoint</div>
+            <div class="code-example">POST /process/csv</div>
+            <div class="docs-text">
+              Process CSV/Excel files with comprehensive transformation pipeline including parsing, cleaning, filtering, aggregation, and export.
+            </div>
+          </div>
+
+          <div class="docs-section">
+            <div class="docs-title">Request Formats</div>
+            <div class="docs-text"><strong>Multipart Form-Data</strong></div>
+            <div class="code-example">Content-Type: multipart/form-data
+
+Fields:
+- file: Binary file
+- url: Remote file URL
+- raw_csv: Raw CSV text
+- output_format: json|csv|excel
+- provide_download: true|false</div>
+
+            <div class="docs-text"><strong>JSON Body</strong></div>
+            <div class="code-example">{
+  "url": "https://example.com/data.csv",
+  "parsing": {
+    "delimiter": ",",
+    "has_header": true
+  },
+  "cleaning": {
+    "drop_duplicates_rows": true,
+    "auto_convert_types": true
+  },
+  "selection": {
+    "columns": ["col1"],
+    "filters": [{
+      "column": "age",
+      "op": ">",
+      "value": "25"
+    }]
+  },
+  "aggregation": {
+    "by": ["category"],
+    "metrics": {
+      "amount": ["sum", "mean"]
+    }
+  },
+  "export": {
+    "output_format": "json"
+  }
+}</div>
+          </div>
+
+          <div class="docs-section">
+            <div class="docs-title">Filter Operators</div>
+            <div class="code-example">= > >= < <= !=
+contains regex</div>
+          </div>
+
+          <div class="docs-section">
+            <div class="docs-title">Aggregation Functions</div>
+            <div class="code-example">sum mean median std
+count nunique</div>
+          </div>
+
+          <div class="docs-section">
+            <div class="docs-title">Response Format</div>
+            <div class="code-example">{
+  "data": [...],
+  "download_url": "/downloads/file.csv",
+  "stats": {
+    "rows": 1000,
+    "columns": 5,
+    "numeric_columns": [...]
+  },
+  "errors": []
+}</div>
+          </div>
+
+          <div class="docs-section">
+            <div class="docs-title">cURL Examples</div>
+            <div class="code-example"># Upload file
+curl -X POST /process/csv \
+  -F "file=@data.csv" \
+  -F "output_format=json"
+
+# From URL with filters
+curl -X POST /process/csv \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/data.csv",
+    "selection": {
+      "filters": [{
+        "column": "age",
+        "op": ">",
+        "value": "25"
+      }]
+    }
+  }'</div>
+          </div>
+
+          <div class="docs-section">
+            <div class="info-callout">
+              <div class="info-callout-title">Processing Pipeline</div>
+              <div class="info-callout-text">
+                1. Parse CSV/Excel<br>
+                2. Clean data<br>
+                3. Convert types<br>
+                4. Filter rows/columns<br>
+                5. Aggregate metrics<br>
+                6. Sort results<br>
+                7. Export format
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const section = item.dataset.section;
+        const target = document.querySelector(`[data-nav="${section}"]`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const parent = tab.closest('.tabs-container, .response-tabs');
+        const container = parent.nextElementSibling;
+        const tabName = tab.dataset.tab;
+        
+        parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        container.querySelector(`[data-content="${tabName}"]`).classList.add('active');
+      });
+    });
+
+    // Collapsible
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.parentElement.classList.toggle('open');
+      });
+    });
+
+    // JSON mode toggle
+    document.getElementById('jsonMode').addEventListener('change', (e) => {
+      document.getElementById('modeIndicator').textContent = 
+        e.target.checked ? 'application/json' : 'multipart/form-data';
+    });
+
+    // Dynamic filters
+    let filterCount = 0;
+    document.getElementById('add-filter').addEventListener('click', () => {
+      const container = document.getElementById('filters-container');
+      const id = `filter-${filterCount++}`;
+      const div = document.createElement('div');
+      div.className = 'dynamic-row';
+      div.innerHTML = `
+        <input type="text" class="form-input" placeholder="Column" data-filter-col="${id}" />
+        <select class="form-select" data-filter-op="${id}">
+          <option value="=">=</option>
+          <option value=">">></option>
+          <option value=">=">>=</option>
+          <option value="<"><</option>
+          <option value="<="><=</option>
+          <option value="!=">!=</option>
+          <option value="contains">contains</option>
+          <option value="regex">regex</option>
+        </select>
+        <input type="text" class="form-input" placeholder="Value" data-filter-val="${id}" />
+        <button class="btn-icon" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(div);
+    });
+
+    // Dynamic metrics
+    let metricCount = 0;
+    document.getElementById('add-metric').addEventListener('click', () => {
+      const container = document.getElementById('metrics-container');
+      const id = `metric-${metricCount++}`;
+      const div = document.createElement('div');
+      div.className = 'metric-item';
+      div.innerHTML = `
+        <div class="metric-header">
+          <input type="text" class="form-input" placeholder="Column name" data-metric-col="${id}" />
+          <button class="btn-icon" onclick="this.parentElement.parentElement.remove()">✕</button>
+        </div>
+        <div class="metric-functions">
+          <label class="func-checkbox">
+            <input type="checkbox" value="sum" data-metric-func="${id}" /> sum
+          </label>
+          <label class="func-checkbox">
+            <input type="checkbox" value="mean" data-metric-func="${id}" /> mean
+          </label>
+          <label class="func-checkbox">
+            <input type="checkbox" value="median" data-metric-func="${id}" /> median
+          </label>
+          <label class="func-checkbox">
+            <input type="checkbox" value="std" data-metric-func="${id}" /> std
+          </label>
+          <label class="func-checkbox">
+            <input type="checkbox" value="count" data-metric-func="${id}" /> count
+          </label>
+          <label class="func-checkbox">
+            <input type="checkbox" value="nunique" data-metric-func="${id}" /> nunique
+          </label>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    // Dynamic sorting
+    let sortCount = 0;
+    document.getElementById('add-sort').addEventListener('click', () => {
+      const container = document.getElementById('sort-container');
+      const id = `sort-${sortCount++}`;
+      const div = document.createElement('div');
+      div.className = 'dynamic-row sort';
+      div.innerHTML = `
+        <input type="text" class="form-input" placeholder="Column name" data-sort-col="${id}" />
+        <select class="form-select" data-sort-asc="${id}">
+          <option value="true">Ascending</option>
+          <option value="false">Descending</option>
+        </select>
+        <button class="btn-icon" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(div);
+    });
+
+    // Toggle docs
+    function toggleDocs() {
+      document.getElementById('docsPanel').classList.toggle('visible');
+    }
+
+    // Send request
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+      const emptyState = document.getElementById('emptyState');
+      const emptyStateStats = document.getElementById('emptyStateStats');
+      const responseViewer = document.getElementById('responseViewer');
+      const statsDisplay = document.getElementById('statsDisplay');
+      const detailedStats = document.getElementById('detailedStats');
+      const statusIndicator = document.getElementById('statusIndicator');
+      const responseTime = document.getElementById('responseTime');
+
+      emptyState.style.display = 'none';
+      emptyStateStats.style.display = 'none';
+      responseViewer.style.display = 'block';
+      statsDisplay.style.display = 'block';
+
+      statusIndicator.className = 'status-indicator status-pending';
+      statusIndicator.textContent = 'SENDING';
+      responseTime.textContent = '';
+      responseViewer.textContent = 'Processing request...';
+
+      const startTime = performance.now();
+      const fileEl = document.getElementById('file');
+      const url = document.getElementById('url').value || null;
+      const rawCsv = document.getElementById('raw_csv').value || null;
+      const jsonMode = document.getElementById('jsonMode').checked;
+
+      // Basic validation: ensure at least one input source is provided
+      if (!(fileEl && fileEl.files && fileEl.files.length) && !url && !rawCsv) {
+        responseViewer.textContent = 'Error: No input provided. Please upload a file, provide a URL, or paste raw CSV.';
+        statusIndicator.className = 'status-indicator status-error';
+        statusIndicator.textContent = '400 ERROR';
+        responseTime.textContent = '';
+        return;
+      }
+
+      // If user selected JSON body mode but also has a file selected, warn and stop
+      if (jsonMode && fileEl && fileEl.files && fileEl.files.length) {
+        responseViewer.textContent = 'Error: JSON body mode cannot include file uploads. Uncheck "Use JSON body mode" to upload a file.';
+        statusIndicator.className = 'status-indicator status-error';
+        statusIndicator.textContent = '400 ERROR';
+        responseTime.textContent = '';
+        return;
+      }
+
+      try {
+        let resp;
+
+        if (jsonMode) {
+          // Build JSON body
+          const parsing = {
+            delimiter: document.getElementById('par_delim').value || null,
+            has_header: document.getElementById('par_has_header').checked,
+            skip_empty_rows: true,
+            trim_whitespace: true,
+            handle_quotes: true
+          };
+
+          const cleaning = {
+            drop_duplicates_rows: document.getElementById('clean_drop_dup_rows').checked,
+            drop_duplicates_columns: document.getElementById('clean_drop_dup_cols').checked,
+            fill_missing_enabled: document.getElementById('clean_fill_missing').checked,
+            fill_missing_value: document.getElementById('clean_fill_value').value || null,
+            auto_convert_types: document.getElementById('clean_auto_convert').checked,
+            normalize_numeric: document.getElementById('clean_normalize').checked,
+            drop_empty_rows: true,
+            drop_empty_columns: true
+          };
+
+          const selCols = document.getElementById('sel_columns').value;
+          const selection = {
+            columns: selCols ? selCols.split(',').map(s => s.trim()).filter(Boolean) : null,
+            filters: []
+          };
+
+          document.querySelectorAll('[data-filter-col]').forEach(el => {
+            const id = el.dataset.filterCol;
+            const col = el.value;
+            const op = document.querySelector(`[data-filter-op="${id}"]`)?.value;
+            const val = document.querySelector(`[data-filter-val="${id}"]`)?.value;
+            if (col && val) {
+              selection.filters.push({ column: col, op: op, value: val });
+            }
+          });
+          if (selection.filters.length === 0) selection.filters = null;
+
+          let aggregation = null;
+          const aggBy = document.getElementById('agg_by').value;
+          if (aggBy && aggBy.trim()) {
+            aggregation = {
+              by: aggBy.split(',').map(s => s.trim()).filter(Boolean),
+              metrics: {}
+            };
+
+            document.querySelectorAll('[data-metric-col]').forEach(el => {
+              const id = el.dataset.metricCol;
+              const col = el.value;
+              const funcs = Array.from(document.querySelectorAll(`[data-metric-func="${id}"]:checked`))
+                .map(cb => cb.value);
+              if (col && funcs.length > 0) {
+                aggregation.metrics[col] = funcs;
+              }
+            });
+          }
+
+          const sorting = { sort: [] };
+          document.querySelectorAll('[data-sort-col]').forEach(el => {
+            const id = el.dataset.sortCol;
+            const col = el.value;
+            const asc = document.querySelector(`[data-sort-asc="${id}"]`)?.value === 'true';
+            if (col) {
+              sorting.sort.push({ column: col, ascending: asc });
+            }
+          });
+          if (sorting.sort.length === 0) sorting.sort = null;
+
+          const exportOpts = {
+            output_format: document.getElementById('output_format').value,
+            provide_download: document.getElementById('provide_download').checked,
+            filename: document.getElementById('filename').value || 'processed'
+          };
+
+          const body = {
+            url,
+            raw_csv: rawCsv,
+            parsing,
+            cleaning,
+            selection,
+            aggregation,
+            sorting,
+            export: exportOpts
+          };
+
+          resp = await fetch('/process/csv', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+        } else {
+          const fd = new FormData();
+          if (fileEl.files && fileEl.files.length) {
+            fd.append('file', fileEl.files[0]);
+          }
+          if (url) fd.append('url', url);
+          if (rawCsv) fd.append('raw_csv', rawCsv);
+          fd.append('output_format', document.getElementById('output_format').value);
+          if (document.getElementById('provide_download').checked) {
+            fd.append('provide_download', 'true');
+          }
+
+          resp = await fetch('/process/csv', {
+            method: 'POST',
+            body: fd
+          });
+        }
+
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+
+        const contentType = resp.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+          const data = await resp.json();
+
+          if (resp.ok) {
+            statusIndicator.className = 'status-indicator status-success';
+            statusIndicator.textContent = `200 OK`;
+            responseTime.textContent = `Time: ${duration}ms`;
+
+            if (data.stats) {
+              statsDisplay.innerHTML = `
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-value">${data.stats.rows || 0}</div>
+                    <div class="stat-label">Rows</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-value">${data.stats.columns || 0}</div>
+                    <div class="stat-label">Columns</div>
+                  </div>
+                  ${data.stats.numeric_columns ? `
+                    <div class="stat-card">
+                      <div class="stat-value">${data.stats.numeric_columns.length}</div>
+                      <div class="stat-label">Numeric</div>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+
+              detailedStats.style.display = 'block';
+              detailedStats.innerHTML = `<div class="code-viewer">${JSON.stringify(data.stats, null, 2)}</div>`;
+            }
+
+             const filteredData = {...data};
+            if (filteredData.data && Array.isArray(filteredData.data) && filteredData.data.length > 0) {
+              filteredData.data = filteredData.data.slice(1); // Remove first row
+            }
+
+            responseViewer.textContent = JSON.stringify(filteredData, null, 2);
+          } else {
+            statusIndicator.className = 'status-indicator status-error';
+            statusIndicator.textContent = `${resp.status} ERROR`;
+            responseTime.textContent = `Time: ${duration}ms`;
+            responseViewer.textContent = JSON.stringify(data, null, 2);
+          }
+        } else {
+          const text = await resp.text();
+          if (resp.ok) {
+            statusIndicator.className = 'status-indicator status-success';
+            statusIndicator.textContent = `200 OK`;
+          } else {
+            statusIndicator.className = 'status-indicator status-error';
+            statusIndicator.textContent = `${resp.status} ERROR`;
+          }
+          responseTime.textContent = `Time: ${duration}ms`;
+          responseViewer.textContent = text.slice(0, 20000);
+        }
+      } catch (err) {
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+        statusIndicator.className = 'status-indicator status-error';
+        statusIndicator.textContent = 'ERROR';
+        responseTime.textContent = `Time: ${duration}ms`;
+        responseViewer.textContent = `Network Error: ${err.message}\n\n${err.stack}`;
+      }
+    });
+
+    // Copy response
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const text = document.getElementById('responseViewer').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      });
+    });
+
+    // Clear response
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('emptyStateStats').style.display = 'flex';
+      document.getElementById('responseViewer').style.display = 'none';
+      document.getElementById('statsDisplay').style.display = 'none';
+      document.getElementById('detailedStats').style.display = 'none';
+      document.getElementById('statusIndicator').textContent = '';
+      document.getElementById('responseTime').textContent = '';
+    });
+  </script>
+</body>
+</html>
