@@ -10,6 +10,8 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from pathlib import Path
 
 from app.core.config import settings
 from app.routers.process import router as process_router
@@ -36,6 +38,19 @@ settings.EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Mount exports directory statically to serve downloadable files
 app.mount("/downloads", StaticFiles(directory=str(settings.EXPORT_DIR)), name="downloads")
+
+# Serve simple frontend (UI) for testing at /
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root_ui() -> HTMLResponse:
+    index_path = FRONTEND_DIR / "index.html"
+    if index_path.exists():
+        return HTMLResponse(index_path.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>No UI found</h1></body></html>")
 
 # Routers
 app.include_router(process_router, prefix="/process", tags=["processing"])
