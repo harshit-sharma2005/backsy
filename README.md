@@ -69,6 +69,41 @@ You can send data either as multipart/form-data or application/json.
 - `data` is omitted when `provide_download=true`.
 - `download_url` is returned when exporting CSV/Excel.
 
+## Examples
+
+### Upload CSV via curl
+
+```bash
+curl -X POST "http://127.0.0.1:8000/process/csv" \
+  -F "file=@data.csv" \
+  -F "output_format=json" \
+  -F "provide_download=false"
+```
+
+### Call JSON mode with Python
+
+```python
+import requests
+
+url = "http://127.0.0.1:8000/process/csv"
+payload = {
+    "url": "https://example.com/data.csv",
+    "cleaning": {
+        "drop_duplicates_rows": True,
+        "fill_missing_enabled": True,
+        "fill_missing_value": "NA"
+    },
+    "export": {
+        "output_format": "json",
+        "provide_download": False
+    }
+}
+
+response = requests.post(url, json=payload)
+data = response.json()
+print(data)
+```
+
 ## Notes on behavior
 
 - Delimiter and header row are inferred if not provided.
@@ -87,6 +122,49 @@ You can send data either as multipart/form-data or application/json.
 ```powershell
 python -m pytest -q
 ```
+
+## Deploy on Render
+
+To deploy this service on Render:
+
+1. Create a new **Web Service** in your Render dashboard
+2. Connect your repository
+3. Use the following configuration:
+
+**Start Command:**
+```
+python -m uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2
+```
+
+**Required Environment Variables:**
+- `CSVAPI_EXPORT_DIR` — Directory for temporary exports (default: `exports`)
+- `CSVAPI_MAX_UPLOAD_MB` — Maximum file upload size in MB (default: `50`)
+- `CSVAPI_EXPORT_TTL_SECONDS` — Time-to-live for exported files (default: `21600`)
+- `CSVAPI_CLEANUP_INTERVAL_SECONDS` — Cleanup interval in seconds (default: `900`)
+- `CSVAPI_CORS_ALLOW_ORIGINS` — CORS allowed origins (default: `*`)
+
+**Note:** Make sure to configure a persistent disk or volume mounted at your `CSVAPI_EXPORT_DIR` path if you need exports to survive across deployments.
+
+## Troubleshooting
+
+### No UI found
+
+If you visit the root URL and don't see a UI, navigate to `/docs` for the interactive Swagger documentation or use the API endpoints directly.
+
+### 413 Upload Too Large
+
+If you get a 413 error when uploading files:
+- Check the `CSVAPI_MAX_UPLOAD_MB` environment variable (default is 50 MB)
+- Increase it if needed: `CSVAPI_MAX_UPLOAD_MB=100`
+- If deploying behind a reverse proxy (nginx, Apache), also verify its upload size limit
+
+### Export Directory/Mount Issues
+
+If downloads fail or exports are not persisted:
+- Ensure the `CSVAPI_EXPORT_DIR` directory exists and is writable
+- On cloud platforms (Render, Railway, etc.), configure a persistent volume/disk mounted at this path
+- Check file permissions: the app user must have read/write access to the export directory
+- Verify the cleanup job is not deleting files too aggressively (adjust `CSVAPI_EXPORT_TTL_SECONDS`)
 
 - Env vars (prefix `CSVAPI_`):
   - `APP_NAME`
