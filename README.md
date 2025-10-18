@@ -55,6 +55,54 @@ You can send data either as multipart/form-data or application/json.
 }
 ```
 
+## Examples
+
+### 1) Upload a CSV file with curl (multipart)
+
+This uploads a local CSV file, requests a CSV export, and asks the API to provide a downloadable link.
+
+```bash
+curl -X POST "http://127.0.0.1:8000/process/csv" \
+  -H "accept: application/json" \
+  -F "file=@sample.csv;type=text/csv" \
+  -F "output_format=csv" \
+  -F "provide_download=true"
+```
+
+Typical success response (truncated):
+
+```json
+{
+  "data": null,
+  "stats": { "count": 42, "columns": ["col1", "col2"] },
+  "download_url": "/downloads/processed.csv",
+  "errors": null
+}
+```
+
+Open the returned download_url in your browser to fetch the exported file.
+
+### 2) Python example (JSON mode)
+
+This example sends raw CSV text and asks for JSON output inline (no download).
+
+```python
+import requests
+
+API = "http://127.0.0.1:8000/process/csv"
+
+payload = {
+    "raw_csv": "name,age\nalice,30\nbob,25\n",
+    "selection": {"columns": ["name", "age"]},
+    "sorting": {"sort": [{"column": "age", "ascending": False}]},
+    "export": {"output_format": "json", "provide_download": False}
+}
+
+resp = requests.post(API, json=payload, timeout=30)
+resp.raise_for_status()
+print(resp.json())
+```
+
 ## Response shape
 
 ```json
@@ -79,6 +127,19 @@ You can send data either as multipart/form-data or application/json.
 - Group-by returns either size per group or specified metrics.
 - Basic stats are returned when no aggregation is requested.
 
+## Deploy on Render
+
+You can deploy this service directly on Render using the included `render.yaml` or via the dashboard.
+
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python -m uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2`
+- Required environment variables (examples):
+  - `CSVAPI_EXPORT_DIR` (e.g. `/srv/exports`) — where exported files are written and served from `/downloads`
+  - `CSVAPI_MAX_UPLOAD_MB` (e.g. `100`) — soft upload size limit enforced by the app
+  - Optional: `CSVAPI_CORS_ALLOW_ORIGINS` (e.g. `*`)
+
+If you need persistent downloads across restarts, add a Disk in Render and mount it at the same path as `CSVAPI_EXPORT_DIR` (e.g. `/srv/exports`). The provided `render.yaml` shows an example disk configuration.
+
 ## Development
 
 - Format: follow PEP8; type hints included
@@ -95,6 +156,17 @@ python -m pytest -q
   - `CLEANUP_INTERVAL_SECONDS` (default 900)
   - `MAX_UPLOAD_MB` (default 50)
   - `CORS_ALLOW_ORIGINS` (default `*`)
+
+## Troubleshooting
+
+- No UI found
+  - The root route (`/`) renders `frontend/index.html` if present. If you see “No UI found”, either open the interactive docs at `/docs`, or add a simple HTML file at `frontend/index.html` and redeploy. In production, ensure the `frontend/` folder is included in your build.
+
+- 413 upload too large
+  - The API enforces a soft limit based on `CSVAPI_MAX_UPLOAD_MB`. Increase this env var and redeploy if needed. If you’re behind a proxy or platform that also limits request size, raise that limit there as well.
+
+- Export directory/mount issues
+  - Downloads are served from `/downloads`, backed by the path in `CSVAPI_EXPORT_DIR`. Ensure this directory exists and is writable at runtime. On Render, mount a persistent Disk at the same path (e.g. `/srv/exports`). If the path changes, update `CSVAPI_EXPORT_DIR` to match. A restart may be required after mounting.
 
 ## License
 
